@@ -32,13 +32,7 @@ class BMPlayerLayerView: UIView {
     var timer       : NSTimer?
     
     /// 播放属性
-    lazy var player: AVPlayer? = {
-        if let item = self.playerItem {
-            return  AVPlayer(playerItem: item)
-        }
-        return nil
-    }()
-    
+    var player: AVPlayer?
     
     var isPlaying     = false {
         didSet {
@@ -164,11 +158,8 @@ class BMPlayerLayerView: UIView {
     private func onSetVideoURL() {
         self.repeatToPlay = false
         self.playDidEnd   = false
-        self.configPlayer()
-        
+        self.playerItem = AVPlayerItem(URL: videoURL)
     }
-    
-    
     
     private func onPlayerItemChange() {
         if lastPlayerItem == playerItem {
@@ -194,18 +185,18 @@ class BMPlayerLayerView: UIView {
             // 缓冲区有足够数据可以播放了
             item.addObserver(self, forKeyPath: "playbackLikelyToKeepUp", options: NSKeyValueObservingOptions.New, context: nil)
         }
+        configPlayer()
     }
     
-    private func configPlayer(){
-        self.playerItem = AVPlayerItem(URL: videoURL)
-        
-        self.player     = AVPlayer(playerItem: playerItem!)
-        
-        self.playerLayer = AVPlayerLayer(player: player)
-        
-        self.playerLayer!.videoGravity = AVLayerVideoGravityResizeAspect
-        
-        self.layer.insertSublayer(playerLayer!, atIndex: 0)
+    private func configPlayer() {
+        if self.player == nil {
+            self.player = AVPlayer(playerItem: playerItem!)
+            self.playerLayer = AVPlayerLayer(player: player)
+            self.playerLayer!.videoGravity = AVLayerVideoGravityResizeAspect
+            self.layer.insertSublayer(playerLayer!, atIndex: 0)
+        } else {
+            self.player?.replaceCurrentItemWithPlayerItem(playerItem!)
+        }
         
         self.timer  = NSTimer.scheduledTimerWithTimeInterval(1.0, target: self, selector: #selector(playerTimerAction), userInfo: nil, repeats: true)
         

@@ -28,6 +28,7 @@ enum BMPanDirection: Int {
 enum BMPlayerItemType {
     case URL
     case BMPlayerItem
+    case AVPlayerItem
 }
 
 public class BMPlayer: UIView {
@@ -35,6 +36,7 @@ public class BMPlayer: UIView {
     public var backBlock:(() -> Void)?
     
     var videoItem: BMPlayerItem!
+    var avPlayerItem: AVPlayerItem?
     
     var currentDefinition = 0
     
@@ -62,7 +64,7 @@ public class BMPlayer: UIView {
     private var currentPosition : NSTimeInterval = 0
     private var shouldSeekTo    : NSTimeInterval = 0
     
-    private var isURLSet        = false
+    private var isPlayerItemSet = false
     private var isSliderSliding = false
     private var isPauseByUser   = false
     private var isVolume        = false
@@ -86,7 +88,7 @@ public class BMPlayer: UIView {
         
         if BMPlayerConf.shouldAutoPlay {
             playerLayer?.videoURL   = videoItemURL
-            isURLSet                = true
+            isPlayerItemSet              = true
         } else {
             controlView.hideLoader()
         }
@@ -108,9 +110,19 @@ public class BMPlayer: UIView {
         
         if BMPlayerConf.shouldAutoPlay {
             playerLayer?.videoURL   = videoItem.resource[currentDefinition].playURL
-            isURLSet                = true
+            isPlayerItemSet              = true
         } else {
             controlView.showCoverWithLink(item.cover)
+        }
+    }
+    
+    
+    public func playerWithAVPlayerItem(playerItem: AVPlayerItem) {
+        playerItemType = .AVPlayerItem
+        avPlayerItem   = playerItem
+        if BMPlayerConf.shouldAutoPlay {
+            playerLayer?.playerItem = playerItem
+            isPlayerItemSet = true
         }
     }
     
@@ -118,7 +130,7 @@ public class BMPlayer: UIView {
      使用自动播放，参照pause函数
      */
     public func autoPlay() {
-        if !isPauseByUser && isURLSet {
+        if !isPauseByUser && isPlayerItemSet {
             self.play()
         }
     }
@@ -127,14 +139,16 @@ public class BMPlayer: UIView {
      手动播放
      */
     public func play() {
-        if !isURLSet {
+        if !isPlayerItemSet {
             if playerItemType == BMPlayerItemType.BMPlayerItem {
-                playerLayer?.videoURL       = videoItem.resource[currentDefinition].playURL
+                playerLayer?.videoURL = videoItem.resource[currentDefinition].playURL
+            } else if (playerItemType == BMPlayerItemType.AVPlayerItem) {
+                playerLayer?.playerItem = avPlayerItem
             } else {
-                playerLayer?.videoURL       = videoItemURL
+                playerLayer?.videoURL = videoItemURL
             }
             controlView.hideImageView()
-            isURLSet                = true
+            isPlayerItemSet = true
         }
         playerLayer?.play()
         isPauseByUser = false
@@ -388,8 +402,8 @@ public class BMPlayer: UIView {
     }
     
     @objc private func fullScreenButtonPressed(button: UIButton?) {
-        if !isURLSet {
-//            self.play()
+        if !isPlayerItemSet {
+            //            self.play()
         }
         controlView.isFullScreen = !self.isFullScreen
         if isFullScreen {
